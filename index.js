@@ -36,10 +36,6 @@ function getRecentTracks(callback) {
 // Server functions
 const app = express();
 
-function startup() {
-    console.log("Starting server on port 8080.");
-}
-
 function get(request, response) {
     getRecentTracks(function(error, tracks) {
         if (error) {
@@ -50,6 +46,12 @@ function get(request, response) {
         response.json(tracks);
     });
 }
-
 app.get('/', get);
-app.listen(8080, startup);
+
+function startup() {
+    var port = process.env.PORT || 8080;
+    app.listen(port);
+    console.log("Starting server on port " + port);
+}
+
+startup();
