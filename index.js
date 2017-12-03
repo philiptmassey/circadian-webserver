@@ -3,19 +3,52 @@ var moment = require('moment');
 var request = require('request');
 var express = require('express');
 
-var client_id = '570525846778123c7e477ea11d7d9003';
-var client_id_append = '?client_id=' + client_id;
-var sc_url = 'https://api.soundcloud.com';
+var USER_ID = '9393885'
+var CLIENT_ID = '570525846778123c7e477ea11d7d9003';
+var CLIENT_ID_APPEND = '?client_id=' + CLIENT_ID;
+var SC_URL = 'https://api.soundcloud.com';
 
 // SoundCloud functions
+function getSoundCloudCollection(url, callback, collection) {
+    console.log("request to: " + url);
+    request(url, function(error, response, body) {
+        if (error) {
+            callback(error);
+            return;
+        }
+
+        var data = JSON.parse(body);
+        var new_collection = data.collection.concat(collection);
+        if (data.next_href) {
+            getSoundCloudCollection(data.next_href, callback, new_collection);
+        } else {
+            callback(false, new_collection);
+        }
+    });
+}
+
+function getFollowings(user_id, callback) {
+    var url = SC_URL + '/users/' + user_id + '/followings' + CLIENT_ID_APPEND;
+    getSoundCloudCollection(url, function(error, followings) {
+        if (error) {
+            callback(error);
+            return;
+        }
+
+        var user_ids = followings.map(user => user.id);
+        callback(false, user_ids);
+    }, []);
+}
+
 function isRecent(track) {
-    var date = moment().subtract(100, 'days');
+    var date = moment().subtract(3, 'days');
     var created_date = moment(track.created_at, 'YYYY/MM/DD HH:mm:ss Z');
     return created_date.isAfter(date);
 }
 
 function getRecentTracksForUser(user_id, callback) {
-    var url = sc_url + '/users/' + user_id + '/tracks' + client_id_append;
+    var url = SC_URL + '/users/' + user_id + '/tracks' + CLIENT_ID_APPEND;
+    console.log("request to: " + url);
     request(url, function (error, response, body) {
         if (error) {
             callback(error);
@@ -29,8 +62,22 @@ function getRecentTracksForUser(user_id, callback) {
 }
 
 function getRecentTracks(callback) {
-    var user_ids = ['27111815', '124158269'];
-    async.map(user_ids, getRecentTracksForUser, callback);
+    getFollowings(USER_ID, function(error, results) {
+        if (error) {
+            callback(error);
+            return;
+        }
+
+        async.map(results, getRecentTracksForUser, function (error, results) {
+            if (error) {
+                callback(error);
+                return;
+            }
+
+            var merged = [].concat.apply([], results);
+            callback(false, merged);
+        });
+    });
 }
 
 // Server functions
@@ -46,7 +93,7 @@ function get(request, response) {
         response.json(tracks);
     });
 }
-app.get('/', get);
+app.get('/get', get);
 
 function startup() {
     var port = process.env.PORT || 8080;
