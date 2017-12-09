@@ -4,7 +4,7 @@ var request = require('request');
 var express = require('express');
 
 var USER_ID = '9393885'
-var CLIENT_ID = '570525846778123c7e477ea11d7d9003';
+var CLIENT_ID = 'c6CU49JDMapyrQo06UxU9xouB9ZVzqCn';
 var CLIENT_ID_APPEND = '?client_id=' + CLIENT_ID;
 var SC_URL = 'https://api.soundcloud.com';
 
